@@ -39,4 +39,20 @@ func main() {
 	}
 	fmt.Println(query)
 	fmt.Println(args)
+
+	base := sq.Select("*").
+		From("employees e").PlaceholderFormat(sq.Dollar).
+		Where("e.revision_org_id IS NOT NULL").
+		Where(sq.Or{
+			sq.Expr("e.fio ilike ?", "%"+"ИВАНОВ"+"%"),
+			sq.Expr("(to_tsvector(e.fio) @@ plainto_tsquery( ? ))", "ИВАНОВ"),
+		})
+
+	query, args, err = base.ToSql()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(query)
+	fmt.Println(args)
 }

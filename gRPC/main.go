@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/golang/protobuf/ptypes"
 	tr "gitlab.services.mts.ru/pepperpotts/api/oebs/transferservice"
 	"google.golang.org/grpc"
 )
@@ -13,8 +14,7 @@ var oebsCli tr.TransferOEBSClient
 func main() {
 
 	// Set up a connection to the server.
-	// conn, err := grpc.Dial("127.0.0.1:9080", grpc.WithInsecure())
-	conn, err := grpc.Dial("127.0.0.1:9080", grpc.WithInsecure())
+	conn, err := grpc.Dial("127.0.0.1:9081", grpc.WithInsecure())
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -28,14 +28,38 @@ func main() {
 	///////////////////////////////////////////////////////////////////////////////////////////
 
 	// ЗП
-	// sal, err := oebsCli.GetSalaryByAssignments(ctx, &tr.GetSalaryByAssignmentsRequest{
-	// 	AssignmentId: []int64{116290},
-	// })
-	// if err != nil {
-	// 	fmt.Println(fmt.Errorf("ЗП: %w", err))
-	// } else {
-	// 	fmt.Println(*sal)
-	// }
+	sal, err := oebsCli.GetSalaryByAssignments(ctx, &tr.GetSalaryByAssignmentsRequest{
+		AssignmentId: []int64{355716},
+		UseCache:     false,
+	})
+	if err != nil {
+		fmt.Println(fmt.Errorf("ЗП: %w", err))
+	} else {
+		dateFrom, err := ptypes.Timestamp(sal.Info[0].DateFrom)
+		if err != nil {
+			fmt.Println(fmt.Errorf("ЗП: %w", err))
+		}
+		fmt.Println("GetSalaryByAssignments")
+		fmt.Println("date_from:", dateFrom.Format("02.01.2006"))
+	}
+
+	// Карточка ШЕ
+	card, err := oebsCli.GetPositionForCard(ctx, &tr.GetPositionForCardRequest{
+		Id:            2943179,
+		AssignmentsId: []int64{355716},
+	})
+	if err != nil {
+		fmt.Println(fmt.Errorf("Карточка ШЕ: %w", err))
+	} else {
+		ass := card.Assignments[0].Assignments
+		fmt.Println("GetPositionForCard")
+		for i := range ass {
+			startDate, err := ptypes.Timestamp(ass[i].StartDate)
+			if err == nil {
+				fmt.Println("start_date: ", startDate.Format("02.01.2006"))
+			}
+		}
+	}
 
 	// Бюджет ШЕ
 	// fot, err := oebsCli.GetFotByPositions(ctx, &tr.GetFotByPositionsRequest{
@@ -131,17 +155,17 @@ func main() {
 	///////////////////////////////////////////////////////////////////
 	//!!!
 	// Прошлые условия труда
-	pwc, err := oebsCli.GetPreviousWorkConditions(ctx, &tr.GetPreviousWorkConditionsRequest{
-		Params: &tr.PreviousRequestParameters{
-			AssignmentId: 116290,
-			PositionId:   116290,
-		},
-	})
-	if err != nil {
-		fmt.Println(fmt.Errorf("Прошлые условия труда: %w", err))
-	} else {
-		fmt.Println(*pwc)
-	}
+	// pwc, err := oebsCli.GetPreviousWorkConditions(ctx, &tr.GetPreviousWorkConditionsRequest{
+	// 	Params: &tr.PreviousRequestParameters{
+	// 		AssignmentId: 116290,
+	// 		PositionId:   116290,
+	// 	},
+	// })
+	// if err != nil {
+	// 	fmt.Println(fmt.Errorf("Прошлые условия труда: %w", err))
+	// } else {
+	// 	fmt.Println(*pwc)
+	// }
 	///////////////////////////////////////////////////////////////////////////
 
 	// Проверка условий труда
@@ -211,6 +235,6 @@ func main() {
 	// 	fmt.Println(*i)
 	// }
 
-	//MakeTransfer(ctx context.Context, in *MakeTransferRequest, opts ...grpc.CallOption) (*MakeTransferResponse, error)
-	//MakeChangeRoration(ctx context.Context, in *MakeChangeRotationRequest, opts ...grpc.CallOption) (*MakeChangeRotationResponse, error)
+	// MakeTransfer(ctx context.Context, in *MakeTransferRequest, opts ...grpc.CallOption) (*MakeTransferResponse, error)
+	// MakeChangeRoration(ctx context.Context, in *MakeChangeRotationRequest, opts ...grpc.CallOption) (*MakeChangeRotationResponse, error)
 }

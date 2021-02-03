@@ -384,50 +384,51 @@ func splitYearByMonth(begin, end time.Time) ([]Interval, error) {
 	if begin.Year() != end.Year() {
 		return nil, fmt.Errorf("not same year")
 	}
-	if !begin.Before(end) {
-		return nil, fmt.Errorf("end < begin")
-	}
-	intervals := make([]Interval, 0)
-	days := 28
-	if IsYear366(begin.Year()) {
-		days++
-	}
+	// if !begin.Before(end) {
+	// 	return nil, fmt.Errorf("end < begin")
+	// }
+	// intervals := make([]Interval, 0)
+	// days := 28
+	// if IsYear366(begin.Year()) {
+	// 	days++
+	// }
 
-	JanuaryStart := time.Date(begin.Year(), 01, 1, 0, 0, 0, 0, Location)
-	JanuaryEnd := time.Date(begin.Year(), 01, 31, 0, 0, 0, 0, Location)
+	// JanuaryStart := time.Date(begin.Year(), 01, 1, 0, 0, 0, 0, Location)
+	// JanuaryEnd := time.Date(begin.Year(), 01, 31, 0, 0, 0, 0, Location)
 
-	FebStart := time.Date(begin.Year(), 02, 1, 0, 0, 0, 0, Location)
-	FebEnd := time.Date(begin.Year(), 02, days, 0, 0, 0, 0, Location)
+	// FebStart := time.Date(begin.Year(), 02, 1, 0, 0, 0, 0, Location)
+	// FebEnd := time.Date(begin.Year(), 02, days, 0, 0, 0, 0, Location)
 
-	MarchStart := time.Date(begin.Year(), 03, 1, 0, 0, 0, 0, Location)
-	MarchEnd := time.Date(begin.Year(), 03, 31, 0, 0, 0, 0, Location)
+	// MarchStart := time.Date(begin.Year(), 03, 1, 0, 0, 0, 0, Location)
+	// MarchEnd := time.Date(begin.Year(), 03, 31, 0, 0, 0, 0, Location)
 
-	AprilStart := time.Date(begin.Year(), 04, 1, 0, 0, 0, 0, Location)
-	AprilEnd := time.Date(begin.Year(), 04, 30, 0, 0, 0, 0, Location)
+	// AprilStart := time.Date(begin.Year(), 04, 1, 0, 0, 0, 0, Location)
+	// AprilEnd := time.Date(begin.Year(), 04, 30, 0, 0, 0, 0, Location)
 
-	MayStart := time.Date(begin.Year(), 05, 1, 0, 0, 0, 0, Location)
-	MayEnd := time.Date(begin.Year(), 05, 31, 0, 0, 0, 0, Location)
+	// MayStart := time.Date(begin.Year(), 05, 1, 0, 0, 0, 0, Location)
+	// MayEnd := time.Date(begin.Year(), 05, 31, 0, 0, 0, 0, Location)
 
-	JuneStart := time.Date(begin.Year(), 06, 1, 0, 0, 0, 0, Location)
-	JuneEnd := time.Date(begin.Year(), 06, 30, 0, 0, 0, 0, Location)
+	// JuneStart := time.Date(begin.Year(), 06, 1, 0, 0, 0, 0, Location)
+	// JuneEnd := time.Date(begin.Year(), 06, 30, 0, 0, 0, 0, Location)
 
-	JuleStart := time.Date(begin.Year(), 07, 1, 0, 0, 0, 0, Location)
-	JuleEnd := time.Date(begin.Year(), 07, 31, 0, 0, 0, 0, Location)
+	// JuleStart := time.Date(begin.Year(), 07, 1, 0, 0, 0, 0, Location)
+	// JuleEnd := time.Date(begin.Year(), 07, 31, 0, 0, 0, 0, Location)
 
-	AugustStart := time.Date(begin.Year(), 8, 1, 0, 0, 0, 0, Location)
-	AugustEnd := time.Date(begin.Year(), 8, 31, 0, 0, 0, 0, Location)
+	// AugustStart := time.Date(begin.Year(), 8, 1, 0, 0, 0, 0, Location)
+	// AugustEnd := time.Date(begin.Year(), 8, 31, 0, 0, 0, 0, Location)
 
-	SeptemberStart := time.Date(begin.Year(), 9, 1, 0, 0, 0, 0, Location)
-	SeptemberEnd := time.Date(begin.Year(), 9, 30, 0, 0, 0, 0, Location)
+	// SeptemberStart := time.Date(begin.Year(), 9, 1, 0, 0, 0, 0, Location)
+	// SeptemberEnd := time.Date(begin.Year(), 9, 30, 0, 0, 0, 0, Location)
 
-	OctoberStart := time.Date(begin.Year(), 10, 1, 0, 0, 0, 0, Location)
-	OctoberEnd := time.Date(begin.Year(), 10, 31, 0, 0, 0, 0, Location)
+	// OctoberStart := time.Date(begin.Year(), 10, 1, 0, 0, 0, 0, Location)
+	// OctoberEnd := time.Date(begin.Year(), 10, 31, 0, 0, 0, 0, Location)
 
-	NovemberStart := time.Date(begin.Year(), 11, 1, 0, 0, 0, 0, Location)
-	NovemberEnd := time.Date(begin.Year(), 11, 30, 0, 0, 0, 0, Location)
+	// NovemberStart := time.Date(begin.Year(), 11, 1, 0, 0, 0, 0, Location)
+	// NovemberEnd := time.Date(begin.Year(), 11, 30, 0, 0, 0, 0, Location)
 
-	DecemberStart := time.Date(begin.Year(), 12, 1, 0, 0, 0, 0, Location)
-	DecemberEnd := time.Date(begin.Year(), 12, 31, 0, 0, 0, 0, Location)
+	// DecemberStart := time.Date(begin.Year(), 12, 1, 0, 0, 0, 0, Location)
+	// DecemberEnd := time.Date(begin.Year(), 12, 31, 0, 0, 0, 0, Location)
+	return nil, nil
 }
 
 func splitDateIntervalByLastSunday(begin, end time.Time) ([]Interval, error) {

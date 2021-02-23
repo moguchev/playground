@@ -55,4 +55,12 @@ func main() {
 	}
 	fmt.Println(query)
 	fmt.Println(args)
+
+	q := sq.Select("t.a", "t.b").From("table t")
+
+	q = q.Columns("t.c")
+
+	sqlraw, args, err := q.ToSql()
+
+	fmt.Println(sqlraw)
 }

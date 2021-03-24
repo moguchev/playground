@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package foo;
+
+option go_package="github.com/moguchev/playground/protogen/foo";
+
+service Foo {
+    rpc GetFoo (GetFooRequest) returns (GetFooResponse) {}
+}
+
+message GetFooRequest {
+    int64 id = 1;
+}
+
+message GetFooResponse {
+    repeated Object foos = 1;
+}
+
+message Object {
+    int64 id = 1;
+}

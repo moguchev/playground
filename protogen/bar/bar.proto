@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package bar;
+
+option go_package="github.com/moguchev/playground/protogen/bar";
+
+import public "github.com/moguchev/playground/protogen/foo/foo.proto";
+
+service Bar {
+   rpc GetFooBar (foo.GetFooRequest) returns (foo.GetFooResponse) {}
+}
+
+// Несовместимы
+/*
+service Bar {
+    rpc GetFooBar (GetFooRequest) returns (GetFooResponse) {}
+}
+
+message GetFooRequest {
+    int64 id = 1;
+}
+
+message GetFooResponse {
+    repeated Object foos = 1;
+}
+
+message Object {
+    int64 id = 1;
+}
+*/

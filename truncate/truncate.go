@@ -13,5 +13,5 @@ func main() {
 
 	v, _ := decimal.NewFromFloat(value).Round(1).Float64()
 	value = v
-	fmt.Printf("%d", v)
+	fmt.Printf("%f", v)
 }

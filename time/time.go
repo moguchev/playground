@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/ptypes"
-	_ "gopkg.in/goracle.v2"
+	// _ "gopkg.in/goracle.v2"
 )
 
 func main() {

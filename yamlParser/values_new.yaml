@@ -1,0 +1,491 @@
+replicaCount: 1
+# monitoring alert - https://confluence.ozon.ru/pages/viewpage.action?pageId=102966752
+monitoring:
+    opsgenie:
+        responsibleTeam: ls_tarifficator_team
+    baseAlerts:
+        slo:
+            - name: maxResponseTimeSeconds
+              threshold: 0.5
+    slackChannel: "tariff-alerts"
+    importance: HIGH
+image:
+    # pullPolicy - так как деплоим мастер, нужно всегда подтягивать свежий image.
+    # Когда будет деплой по тегам - можно будет сменить на IfNotPresent
+    pullPolicy: Always
+vaultScheme: "2"
+service:
+    type: ClusterIP
+    monitoringScope: goapi
+    monitoringSampleLimit: 45k
+    ports:
+        - name: http
+          port: 80
+        - name: grpc
+          port: 82
+        - name: debug
+          port: 84
+# https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/
+readinessProbe:
+    initialDelaySeconds: 5
+    httpGet:
+        path: /ready
+        port: debug
+livenessProbe:
+    httpGet:
+        path: /live
+        port: debug
+# service description data - https://confluence.ozon.ru/pages/viewpage.action?pageId=78354208
+o3:
+    metadata:
+        # service description  (en)
+        description: Metatarifficator
+        # severity level
+        severityLevel: HIGH
+        # business owner name (en)
+        businessOwnerName: Anton Stepanenko
+        # business owner email
+        businessOwnerEmail: zn@ozon.ru
+        # technical owner name (en)
+        technicalOwnerName: Lisitskiy Evgeniy
+        # technical owner email
+        technicalOwnerEmail: elisitskiy@ozon.ru
+        # project slack chanel name
+        slackChan: tariffication_pub
+        # monitoring dashboard url (e.g. grafana)
+        monitoringDashboardUrl: http://grafana.o3.ru/d/BtgL8fHmz/service-overview?var-service=tariffication-metatarifficator
+        # opsGenie url
+        opsGenieUrl: https://app.opsgenie.com/teams/dashboard/9afd914f-8194-4c62-a955-bc60df2bf3b0
+        # project confluence url
+        confluenceUrl: https://confluence.ozon.ru/pages/viewpage.action?pageId=78380468
+        # jira board url
+        jiraBoardUrl: https://jit.ozon.ru/secure/RapidBoard.jspa?projectKey=TARIFF&rapidView=435
+        egressApps: []
+# etcd realtime config - https://confluence.ozon.ru/pages/viewpage.action?pageId=81479040
+realtimeConfig:
+    log_level:
+        usage: Log level enum
+        group: "scratch"
+        value: "INFO" # last value: "WARNING"; updated at: "Thu, 11 Mar 2021 18:25:56 MSK"
+        type: string
+        writable: true
+        view:
+            enum: [ERROR, WARN, INFO, DEBUG]
+    is_gotarifficator_required:
+        usage: The entire request will be failed if required service returns an error.
+        group: providers
+        type: bool
+        value: true
+        writable: true
+    is_russianpost_required:
+        usage: The entire request will be failed if required service returns an error.
+        group: providers
+        type: bool
+        value: false
+        writable: true
+    rfbs_enabled:
+        usage: Whether requests should be routed to the rFBS service.
+        group: providers
+        type: bool
+        value: true # last value: "false"; updated at: "Thu, 11 Mar 2021 18:25:56 MSK"
+        writable: true
+    is_rfbs_required:
+        usage: The entire request will be failed if required service returns an error.
+        group: providers
+        type: bool
+        value: false
+        writable: true
+    cross_border_type_id:
+        usage: Crossborder type id
+        group: "ids"
+        value: "1004"
+        type: int64
+        writable: false
+    cross_border_warehouse_id:
+        usage: Crossborder warehouse id
+        group: "ids"
+        value: "14064221596000"
+        type: int64
+        writable: false
+    digital_items_warehouse_id:
+        usage: Digital items warehouse id
+        group: "ids"
+        value: "-1"
+        type: int64
+        writable: false
+    pharmacy_warehouse_id:
+        usage: Pharmacy warehouse id
+        group: "ids"
+        value: "14064071703000"
+        type: int64
+        writable: false
+    tpl_delivery_enabled:
+        usage: Turns on TPL delivery
+        group: "TPL"
+        value: true
+        type: bool
+        writable: true
+    tpl_delivery_from:
+        usage: Postal code for delivery from
+        group: "TPL"
+        value: "102101"
+        type: string
+        writable: true
+    tpl_russian_post_name:
+        usage: RussianPost name
+        group: "TPL"
+        value: "Почта России"
+        type: string
+        writable: false
+    tpl_russian_post_type_id:
+        usage: RussianPost type id
+        group: "TPL"
+        value: "1004"
+        type: int64
+        writable: false
+    tpl_russian_post_warehouses:
+        usage: RussianPost warehouses
+        group: "TPL"
+        value: true # last value: "false"; updated at: "Thu, 11 Mar 2021 18:25:56 MSK"
+        type: bool
+        writable: true
+    tpl_russian_post_region_price_restriction:
+        usage: RussianPost warehouses
+        group: "TPL"
+        value: true
+        type: bool
+        writable: true
+    tpl_russian_post_warehouses_excluded_extids:
+        usage: RussianPost warehouses external IDs which will be deleted from russian post
+        group: "TPL"
+        value: ""
+        type: string
+        writable: true
+    redis_tpl_expiry_time:
+        usage: Redis TPL cache expiry time
+        group: "redis expiry"
+        value: "8h"
+        type: duration
+        writable: true
+    redis_box_packer_expiry_time:
+        usage: Redis BoxPacker cache expiry time
+        group: "redis expiry"
+        value: "24m"
+        type: duration
+        writable: true
+    redis_best_delivery_methods_expiry_time:
+        usage: Redis BestDeliveryMethods cache expiry time
+        group: "redis expiry"
+        value: "10m"
+        type: duration
+        writable: true
+    redis_get_warehouses_expiry_time:
+        usage: Redis GetWarehouses cache expiry time
+        group: "redis expiry"
+        value: "1s" # last value: "1m"; updated at: "Thu, 11 Mar 2021 18:25:56 MSK"
+        type: duration
+        writable: true
+    redis_get_warehouses_lms_expiry_time:
+        usage: Redis GetWarehouses LMS cache expiry time
+        group: "redis expiry"
+        value: "2h"
+        type: duration
+        writable: true
+    redis_list_sellers_expiry_time:
+        usage: Redis ListSellers LMS cache expiry time
+        group: "redis expiry"
+        value: "2h"
+        type: duration
+        writable: true
+    redis_contract_id_expiry_time:
+        usage: Redis ContractID warehouses LMS cache expiry time
+        group: "redis expiry"
+        value: "2h"
+        type: duration
+        writable: true
+    redis_ring_pool_size:
+        usage: Redis ring pool size
+        group: "redis config"
+        value: 10
+        type: int
+        writable: false
+    redis_local_cache_max_len:
+        usage: Redis cache size
+        group: "redis config"
+        value: 1000
+        type: int
+        writable: false
+    redis_local_cache_expiry_time:
+        usage: Redis cache expiry time
+        group: "redis config"
+        value: "1m"
+        type: duration
+        writable: false
+    redis_dial_timeout:
+        usage: Redis dial timeout
+        group: "redis config"
+        value: "2s"
+        type: duration
+        writable: false
+    redis_read_timeout:
+        usage: Redis read timeout
+        group: "redis config"
+        value: "2s"
+        type: duration
+        writable: false
+    redis_write_timeout:
+        usage: Redis write timeout
+        group: "redis config"
+        value: "2s"
+        type: duration
+        writable: false
+    redis_pool_timeout:
+        usage: Redis pool timeout
+        group: "redis config"
+        value: "2s"
+        type: duration
+        writable: false
+    default_grpc_dial_timeout:
+        usage: Default gRPC client dial timeout
+        group: "grpc"
+        value: "30s"
+        type: duration
+        writable: false
+    default_http_timeout:
+        usage: Default http client timeout
+        group: "http"
+        value: "30s"
+        type: duration
+        writable: false
+    default_http_max_idle_conns:
+        usage: Default http client max idle connections
+        group: "http"
+        value: 100
+        type: int
+        writable: false
+    default_http_max_idle_conns_per_host:
+        usage: Default http client max idle connections per host
+        group: "http"
+        value: 100
+        type: int
+        writable: false
+    default_http_max_rps:
+        usage: MaxRPS (rate limit) for http services
+        group: http
+        value: 0
+        type: int
+        writable: false
+    post_delivery_mode:
+        usage: Russian Post delivery mode - pickpoint or common Post
+        group: ppsearch
+        value: Post+PickPoint
+        type: string
+        writable: true
+        view:
+            enum: [Post, Post+PickPoint, PickPoint]
+    ppsearch_endpoint:
+        usage: "PPSearch service endpoint"
+        group: "ppsearch"
+        value: "ppsearch.geo.k8s:82" # last value: "o3:///ppsearch.geo:grpc"; updated at: "Thu, 11 Mar 2021 18:25:56 MSK"
+        type: string
+        writable: true
+    ppsearch_russian_post_id:
+        usage: RussianPost PickPoint delivery type id
+        group: "ppsearch"
+        value: "1005"
+        type: int64
+        writable: false
+    ppsearch_by_fias_timeout:
+        usage: ByFias method call timeout
+        group: "ppsearch"
+        value: "1s"
+        type: duration
+        writable: true
+    best_date_price_max_rps:
+        usage: "GetBestDateAndPrice max RPS"
+        group: "ratelimit"
+        value: 20 # last value: "100"; updated at: "Thu, 11 Mar 2021 18:25:56 MSK"
+        type: int
+        writable: true
+    fail_fast:
+        usage: "If true, we respond with 429 (TooManyRequests) immediately when ratelimit is hit"
+        group: "ratelimit"
+        value: false
+        type: bool
+        writable: true
+    unknown_clients_max_rps:
+        usage: MaxRPS (rate limit) for unknown clients
+        group: "ratelimit"
+        value: 100 # last value: "1000"; updated at: "Thu, 11 Mar 2021 18:25:56 MSK"
+        type: int
+        writable: true
+    # LRU cache
+    cache_delivery_method_infos_ttl:
+        usage: "Cache TTL for LRU delivery_method_infos"
+        group: "cache"
+        writable: true
+        type: "duration"
+        value: 1h
+    cache_delivery_method_infos_size:
+        usage: "Cache Max Size LRU delivery_method_infos"
+        group: "cache"
+        writable: true
+        type: "int"
+        value: 10000
+    rate_limits:
+        usage: "RateLimiter rules"
+        group: "scratch"
+        writable: true
+        type: "string"
+        value: '[{"clients":["pdp-api"],"handlers":["/metatarifficator.MetaTarifficator/GetBestDateAndPrice"],"limit":400},{"clients":["pdp-api"],"handlers":["/metatarifficator.MetaTarifficator/GetBestDeliveryMethods"],"limit":400},{"clients":["adms-feed-generator"],"handlers":["/metatarifficator.MetaTarifficator/GetBestDateAndPrice"],"limit":15,"timeout":"5s"},{"clients":["unknown"],"handlers":["/metatarifficator.MetaTarifficator/GetBestDateAndPrice","/metatarifficator.MetaTarifficator/GetBestDeliveryMethods"],"limit":2},{"clients":[],"handlers":["/metatarifficator.MetaTarifficator/GetBestDateAndPrice","/metatarifficator.MetaTarifficator/GetBestDeliveryMethods"],"limit":15}]' # last value: "[{"clients":["pdp-api"],"handlers":["/metatarifficator.MetaTarifficator/GetBestDateAndPrice"],"limit":300},{"clients":["pdp-api"],"handlers":["/metatarifficator.MetaTarifficator/GetBestDeliveryMethods"],"limit":400},{"clients":["adms-feed-generator"],"handlers":["/metatarifficator.MetaTarifficator/GetBestDateAndPrice"],"limit":15,"timeout":"5s"},{"clients":["unknown"],"handlers":["/metatarifficator.MetaTarifficator/GetBestDateAndPrice","/metatarifficator.MetaTarifficator/GetBestDeliveryMethods"],"limit":2},{"clients":[],"handlers":["/metatarifficator.MetaTarifficator/GetBestDateAndPrice","/metatarifficator.MetaTarifficator/GetBestDeliveryMethods"],"limit":15}]"; updated at: "Thu, 11 Mar 2021 18:25:56 MSK"
+    sort_enabled:
+        usage: "Флаг, определяющий, включена ли сортировка ответа в GetDeliveryMethods и PickupDeliveryMethods"
+        group: "sort"
+        writable: true
+        type: bool
+        value: true
+    sort_rules:
+        usage: "Правила сортировки ответа в GetDeliveryMethods и PickupDeliveryMethods"
+        group: "sort"
+        writable: true
+        type: "string"
+        value: '[{"providerId":24,"typeId":1002,"weight":0},{"providerId":24,"typeId":1003,"weight":1},{"providerId":1,"typeId":1002,"weight":2},{"providerId":18,"typeId":1005,"weight":3}]'
+    number_decimal_point:
+        usage: "Количество знаков после запятой в координате GetWarehouses"
+        group: "sort"
+        writable: true
+        type: int
+        value: 4
+    warehouses_priorities_cache_refresh_interval:
+        usage: Warehouses priorities cache refresh interval
+        group: warehouse-priority
+        value: 1m # last value: "10m"; updated at: "Thu, 11 Mar 2021 18:25:56 MSK"
+        type: duration
+        writable: true
+    warehouses_priorities_allow_dynamic_strategy:
+        usage: allow to use dynamic sorting strategy
+        group: warehouse-priority
+        value: false
+        type: bool
+        writable: true
+    warehouses_priorities_allow_fias_strategy:
+        usage: allow to use FIAS sorting strategy
+        group: warehouse-priority
+        value: true
+        type: bool
+        writable: true
+    warehouses_priorities_allow_cluster_strategy:
+        usage: allow to use cluser sorting strategy
+        group: warehouse-priority
+        value: true
+        type: bool
+        writable: true
+    enable_get_whs_always:
+        usage: Отдавать только дефолтные склады
+        type: bool
+        value: false
+        writable: true
+        group: handlers
+    redis_pool_stats_collect_interval:
+        usage: Interval between redis pool stats collecting
+        group: redis index
+        value: 1m
+        type: duration
+        writable: true
+    enable_ammo_middleware:
+        usage: Generate ammo from real requests
+        group: "stresstest"
+        value: false
+        type: bool
+        writable: true
+    # DB
+    db_max_idle_conns:
+        usage: Max idle connections per pod
+        group: "DB"
+        value: 2
+        type: int
+        writable: true
+    db_max_open_conns:
+        usage: Max open connections per pod
+        group: "DB"
+        value: 10
+        type: int
+        writable: true
+    db_max_conn_lifetime:
+        usage: Max connections lifetime in minutes
+        group: "DB"
+        value: 5
+        type: int
+        writable: true
+    polygon_api_types:
+        usage: "PolygonAPI types polygons. Example: 1,2,3"
+        group: "API"
+        value: 2,4,19,10,12,25,23,59 # last value: "2,4,10,12,19,23,28,59"; updated at: "Thu, 11 Mar 2021 18:25:56 MSK"
+        type: string
+        writable: true
+    collapse_GetWarehouses_OnEmptyCache:
+        usage: Собирать одинакоые запроссы к GetWarehouses в одну нить при пустом кэше
+        group: API
+        value: false
+        type: bool
+        writable: true
+    turn_off_get_warehouses_redis:
+        usage: Выключить запись и чтение в Redis в GetWarehouses
+        group: API
+        value: false
+        type: bool
+        writable: true
+    rfbs_check_delivery_timeout:
+        usage: Timeout for rFBS CheckDelivery rpc
+        group: real_fbs
+        type: duration
+        value: 300ms
+        writable: true
+    rfbs_coutier_delivery_methods_timeout:
+        usage: Timeout for rFBS CourierDeliveryMethods rpc
+        group: real_fbs
+        type: duration
+        value: 300ms
+        writable: true
+    rfbs_pickup_delivery_methods_timeout:
+        usage: Timeout for rFBS PickupDeliveryMethods rpc
+        group: real_fbs
+        type: duration
+        value: 300ms
+        writable: true
+    rfbs_get_best_date_and_price_v2_timeout:
+        usage: Timeout for rFBS GetBestDateAndPriceV2 rpc
+        group: real_fbs
+        type: duration
+        value: 300ms
+        writable: true
+    rfbs_get_delivery_method_extended_infos_timeout:
+        usage: Timeout for rFBS GetDeliveryMethodExtendedInfos rpc
+        group: real_fbs
+        type: duration
+        value: 50ms
+        writable: true
+    rfbs_get_delivery_methods_without_check_timeout:
+        usage: Timeout for rFBS GetDeliveryMethodsWithoutCheck rpc
+        group: real_fbs
+        type: duration
+        value: 300ms
+        writable: true
+    rfbs_get_warehouse_info_timeout:
+        usage: Timeout for rFBS GetWarehouseInfo rpc
+        group: real_fbs
+        type: duration
+        value: 50ms
+        writable: true
+    rfbs_get_warehouses_timeout:
+        usage: Timeout for rFBS GetWarehouses rpc
+        group: real_fbs
+        type: duration
+        value: 100ms
+        writable: true
+    rfbs_get_available_delivery_types_timeout:
+        usage: Timeout for rFBS GetAvailableDeliveryTypes rpc
+        group: real_fbs
+        type: duration
+        value: 300ms
+        writable: true

@@ -1,15 +1,13 @@
 package main
 
 import (
-	"context"
 	"fmt"
 
-	"github.com/golang/protobuf/ptypes"
-	tr "gitlab.services.mts.ru/pepperpotts/api/oebs/transferservice"
+	// tr "gitlab.services.mts.ru/pepperpotts/api/oebs/transferservice"
 	"google.golang.org/grpc"
 )
 
-var oebsCli tr.TransferOEBSClient
+// var oebsCli tr.TransferOEBSClient
 
 func main() {
 
@@ -23,43 +21,43 @@ func main() {
 		conn.Close()
 	}()
 
-	oebsCli := tr.NewTransferOEBSClient(conn)
-	ctx := context.Background()
+	// oebsCli := tr.NewTransferOEBSClient(conn)
+	// ctx := context.Background()
 	///////////////////////////////////////////////////////////////////////////////////////////
 
 	// ЗП
-	sal, err := oebsCli.GetSalaryByAssignments(ctx, &tr.GetSalaryByAssignmentsRequest{
-		AssignmentId: []int64{355716},
-		UseCache:     false,
-	})
-	if err != nil {
-		fmt.Println(fmt.Errorf("ЗП: %w", err))
-	} else {
-		dateFrom, err := ptypes.Timestamp(sal.Info[0].DateFrom)
-		if err != nil {
-			fmt.Println(fmt.Errorf("ЗП: %w", err))
-		}
-		fmt.Println("GetSalaryByAssignments")
-		fmt.Println("date_from:", dateFrom.Format("02.01.2006"))
-	}
+	// sal, err := oebsCli.GetSalaryByAssignments(ctx, &tr.GetSalaryByAssignmentsRequest{
+	// 	AssignmentId: []int64{355716},
+	// 	UseCache:     false,
+	// })
+	// if err != nil {
+	// 	fmt.Println(fmt.Errorf("ЗП: %w", err))
+	// } else {
+	// 	dateFrom, err := ptypes.Timestamp(sal.Info[0].DateFrom)
+	// 	if err != nil {
+	// 		fmt.Println(fmt.Errorf("ЗП: %w", err))
+	// 	}
+	// 	fmt.Println("GetSalaryByAssignments")
+	// 	fmt.Println("date_from:", dateFrom.Format("02.01.2006"))
+	// }
 
 	// Карточка ШЕ
-	card, err := oebsCli.GetPositionForCard(ctx, &tr.GetPositionForCardRequest{
-		Id:            2943179,
-		AssignmentsId: []int64{355716},
-	})
-	if err != nil {
-		fmt.Println(fmt.Errorf("Карточка ШЕ: %w", err))
-	} else {
-		ass := card.Assignments[0].Assignments
-		fmt.Println("GetPositionForCard")
-		for i := range ass {
-			startDate, err := ptypes.Timestamp(ass[i].StartDate)
-			if err == nil {
-				fmt.Println("start_date: ", startDate.Format("02.01.2006"))
-			}
-		}
-	}
+	// card, err := oebsCli.GetPositionForCard(ctx, &tr.GetPositionForCardRequest{
+	// 	Id:            2943179,
+	// 	AssignmentsId: []int64{355716},
+	// })
+	// if err != nil {
+	// 	fmt.Println(fmt.Errorf("Карточка ШЕ: %w", err))
+	// } else {
+	// 	ass := card.Assignments[0].Assignments
+	// 	fmt.Println("GetPositionForCard")
+	// 	for i := range ass {
+	// 		startDate, err := ptypes.Timestamp(ass[i].StartDate)
+	// 		if err == nil {
+	// 			fmt.Println("start_date: ", startDate.Format("02.01.2006"))
+	// 		}
+	// 	}
+	// }
 
 	// Бюджет ШЕ
 	// fot, err := oebsCli.GetFotByPositions(ctx, &tr.GetFotByPositionsRequest{

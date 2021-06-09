@@ -1,154 +1,240 @@
 package main
 
 import (
-	"fmt"
-	"log"
-	"time"
-
-	sq "github.com/Masterminds/squirrel"
-	"github.com/golang/protobuf/ptypes"
-
-	"github.com/jmoiron/sqlx"
-
 	"database/sql"
 	"database/sql/driver"
+	"fmt"
+	"log"
+	"sort"
+	"strconv"
+	"strings"
+	"time"
 
-	"github.com/jackc/pgx/v4/stdlib"
-	"github.com/opencensus-integrations/ocsql"
+	"github.com/jackc/pgx"
+	_ "github.com/jackc/pgx/v4"
+	"github.com/lib/pq"
+	_ "github.com/lib/pq"
+	"github.com/pkg/errors"
 )
 
-type Config struct {
-	Connection      string        `yaml:"postgresql"`
-	MaxOpenConn     int           `yaml:"max_open_conn"`
-	MaxIdleConn     int           `yaml:"max_idle_conn"`
-	MaxConnLifetime time.Duration `yaml:"max_conn_lifetime"`
-	opts            options
+type TimeZoneOffset struct {
+	offset int8
 }
 
-type options struct {
-	Wrapper func(driver.Connector) driver.Connector
-}
-
-func TelemetryWrapper(drv driver.Connector) driver.Connector {
-	return ocsql.WrapConnector(drv, ocsql.WithOptions(ocsql.TraceOptions{
-		AllowRoot:    true,
-		Ping:         true,
-		RowsClose:    true,
-		RowsAffected: true,
-		LastInsertID: true,
-		Query:        true,
-	}))
-}
-
-func WithWrapper(cfg Config, wrapper func(drv driver.Connector) driver.Connector) Config {
-	if cfg.opts.Wrapper == nil {
-		cfg.opts.Wrapper = wrapper
-	} else {
-		cfg.opts.Wrapper = func(drv driver.Connector) driver.Connector {
-			return wrapper(cfg.opts.Wrapper(drv))
-		}
-	}
-	return cfg
-}
-
-var DefaultWrapper = TelemetryWrapper
-
-func (cfg Config) CreateDB() (*sqlx.DB, error) {
-	var (
-		ctor driver.Connector
+func (t *TimeZoneOffset) DecodeText(src string) error {
+	const (
+		utc           = "UTC"
+		pgxTimeLayout = "03:00:00"
+		maxTimezone   = 14
+		minTimezone   = -12
 	)
 
-	drv := stdlib.GetDefaultDriver().(*stdlib.Driver)
-
-	ctor, err := drv.OpenConnector(cfg.Connection)
+	var (
+		parse int64
+		err   error
+		tmp   time.Time
+	)
+	if strings.HasPrefix(src, utc) {
+		parse, err = strconv.ParseInt(strings.TrimPrefix(src, utc), 10, 8)
+	} else {
+		tmp, err = time.Parse(pgxTimeLayout, src)
+		parse = int64(tmp.Hour())
+	}
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	if cfg.opts.Wrapper == nil {
-		cfg.opts.Wrapper = DefaultWrapper
+	if parse >= minTimezone && parse <= maxTimezone {
+		t.offset = int8(parse)
+		return nil
 	}
-
-	ctor = cfg.opts.Wrapper(ctor)
-
-	db := sql.OpenDB(ctor)
-
-	if cfg.MaxConnLifetime != 0 {
-		db.SetConnMaxLifetime(cfg.MaxConnLifetime)
-	}
-
-	if cfg.MaxIdleConn != 0 {
-		db.SetMaxIdleConns(cfg.MaxIdleConn)
-	}
-
-	if cfg.MaxOpenConn != 0 {
-		db.SetMaxOpenConns(cfg.MaxOpenConn)
-	}
-
-	return sqlx.NewDb(db, "pgx"), nil
+	return fmt.Errorf("wrong timezone: %s", src)
 }
 
-type SalaryChangeInfo struct {
-	AssignmentID int64     `db:"assignment_id"`
-	Date         time.Time `db:"last_change_date"`
-	Diff         float64   `db:"sal_diff"`
+func (t *TimeZoneOffset) DecodeTime(src time.Time) error {
+	t.offset = int8(src.Hour())
+	return nil
 }
 
-var getSalaryChangeQuery = sq.Select("assignment_id, last_change_date, sal_diff").
-	From("salarychanges").
-	PlaceholderFormat(sq.Dollar)
+// Scan implements the database/sql Scanner interface.
+func (dst *TimeZoneOffset) Scan(src interface{}) error {
+	if src == nil {
+		dst = nil
+		return nil
+	}
+
+	switch src := src.(type) {
+	case string:
+		return dst.DecodeText(src)
+	case time.Time:
+		return dst.DecodeTime(src)
+	default:
+		return fmt.Errorf("cannot scan %T", src)
+	}
+}
+
+type Tag struct {
+	ID    int64
+	Name  string
+	Alias string
+}
+
+type Tags []Tag
+
+func (t Tags) Equal(o Tags) bool {
+	if len(t) != len(o) {
+		return false
+	}
+
+	m := make(map[int64]bool, len(o))
+	for i := range o {
+		m[o[i].ID] = true
+	}
+
+	for i := range t {
+		if ok := m[t[i].ID]; !ok {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Value implements the database/sql/driver Valuer interface.
+func (src Tag) Value() (driver.Value, error) {
+	const api = "Tag.Value"
+
+	return src.ID, nil
+}
+
+// Scan implements the database/sql Scanner interface.
+func (dst *Tag) Scan(src interface{}) error {
+	const api = "Tag.Scan"
+	fmt.Printf(api+": %T", src)
+	if src == nil {
+		dst = nil
+		return nil
+	}
+	var (
+		id  int64
+		err error
+	)
+	switch src.(type) {
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		id = src.(int64)
+	case []byte, string:
+		id, err = strconv.ParseInt(src.(string), 10, 64)
+	default:
+		err = fmt.Errorf("cannot scan %T", src)
+	}
+
+	if err != nil {
+		return errors.Wrap(err, api)
+	}
+
+	*dst = Tag{ID: id}
+	return nil
+}
+
+// Value implements the database/sql/driver Valuer interface.
+func (src Tags) Value() (driver.Value, error) {
+	const api = "Tags.Value"
+	if src == nil {
+		return nil, nil
+	}
+
+	ids := make([]int64, 0, len(src))
+	for i := range src {
+		ids = append(ids, src[i].ID)
+	}
+	// optional
+	sort.Slice(ids, func(i, j int) bool {
+		return ids[i] < ids[j]
+	})
+
+	v, err := pq.Array(ids).Value()
+	return v, errors.Wrap(err, api)
+}
+
+// Scan implements the database/sql Scanner interface.
+func (dst *Tags) Scan(src interface{}) error {
+	const api = "Tags.Scan"
+	log.Printf("%#v, %T", src, src)
+	if src == nil {
+		return nil
+	}
+
+	var ids []int64
+	if err := pq.Array(&ids).Scan(src); err != nil {
+		return errors.Wrap(err, api)
+	}
+
+	*dst = make(Tags, len(ids))
+	for i := range ids {
+		(*dst)[i] = Tag{ID: ids[i]}
+	}
+
+	return nil
+}
 
 func main() {
-	conn := "host=localhost port=5432 user=revision password=gd1dd2jkr87ds dbname=oebs sslmode=disable"
-
-	cfg := Config{
-		Connection: conn,
-	}
-
-	db, err := cfg.CreateDB()
+	var (
+	// t, tp time.Time
+	// s, sp string
+	// m, mp TimeZoneOffset
+	)
+	// ctx := context.Background()
+	conn := "host=localhost port=6432 user=datagateway-user password=QuePhoh7xeing7U dbname=datagateway sslmode=disable"
+	db, err := sql.Open("postgres", conn)
 	if err != nil {
-		log.Fatal("crete db: %w", err)
+		log.Fatal(err)
 	}
+	defer db.Close()
 
 	if err = db.Ping(); err != nil {
 		log.Fatal("ping: %w", err)
 	}
 
-	assignments := []int64{355716}
-	orSt := make(sq.Or, 0, len(assignments))
-	for k := range assignments {
-		orSt = append(orSt, sq.Eq{"assignment_id": fmt.Sprint(assignments[k])})
-	}
+	// if err := db.QueryRow("SELECT time_zone_offset FROM deliveryvariant WHERE id = $1", 20703543498000).Scan(&t); err != nil {
+	// 	log.Printf("postgres: time: %s", err)
+	// }
+	// if err := db.QueryRow("SELECT time_zone_offset FROM deliveryvariant WHERE id = $1", 20703543498000).Scan(&s); err != nil {
+	// 	log.Printf("postgres: string: %s", err)
+	// }
+	// if err := db.QueryRow("SELECT time_zone_offset FROM deliveryvariant WHERE id = $1", 20703543498000).Scan(&m); err != nil {
+	// 	log.Printf("postgres: string: %s", err)
+	// }
 
-	query, args, err := getSalaryChangeQuery.Where(orSt).ToSql()
+	///////////////////////////////////////////////
+	pgxdb, err := pgx.Connect(pgx.ConnConfig{
+		Host:     "0.0.0.0",
+		Port:     6432,
+		Database: "datagateway",
+		User:     "datagateway-user",
+		Password: "QuePhoh7xeing7U",
+	})
 	if err != nil {
-		log.Fatal("build query: %w", err)
+		log.Fatalf("Unable to connect to database: %v\n", err)
+	}
+	defer pgxdb.Close()
+	// _, err = pgxdb.Prepare("get dv by id 1", "SELECT time_zone_offset FROM deliveryvariant WHERE id = $1")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	// if err := pgxdb.QueryRow("SELECT time_zone_offset FROM deliveryvariant WHERE id = $1", 20703543498000).Scan(&sp); err != nil {
+	// 	log.Printf("pgx: string: %s", err)
+	// }
+	// if err := pgxdb.QueryRow("SELECT time_zone_offset FROM deliveryvariant WHERE id = $1", 20703543498000).Scan(&tp); err != nil {
+	// 	log.Printf("pgx: time: %s", err)
+	// }
+	var tags Tags
+	if err := pgxdb.QueryRow("SELECT tags FROM deliveryvariant WHERE id = $1", 1011000000002420).Scan(&tags); err != nil {
+		log.Printf("pgx: err: %s", err)
 	}
 
-	rows, err := db.Queryx(query, args...)
-	if err != nil {
-		log.Fatal("query: %w", err)
-	}
+	// var zone TimeZoneOffset
+	// zone.DecodeText("UTC+3")
+	log.Println(tags)
 
-	defer rows.Close()
-	var info SalaryChangeInfo
-	for rows.Next() {
-		if err = rows.StructScan(&info); err != nil {
-			log.Fatal("scan: %w", err)
-		}
-		log.Println(info)
-	}
-
-	dateFromProto, err := ptypes.TimestampProto(info.Date.UTC())
-	if err != nil {
-		log.Fatal("TimestampProto: %w", err)
-	}
-	log.Println(dateFromProto)
-
-	dateFrom, err := ptypes.Timestamp(dateFromProto)
-	if err != nil {
-		log.Fatal("Timestamp: %w", err)
-	}
-
-	log.Println(dateFrom.Format("02.01.2006"))
 }

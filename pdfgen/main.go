@@ -72,17 +72,17 @@ func main() {
 					Approvers: []ApproverTemplate{
 						ApproverTemplate{
 							Fio:         "Иванов Иван Иванович",
-							Email:       "ivanov@mts.ru",
+							Email:       "",
 							PhoneNumber: "+79999999999",
 						},
 						ApproverTemplate{
 							Fio:         "Иванов Иван Иванович",
-							Email:       "ivanov@mts.ru",
+							Email:       "",
 							PhoneNumber: "+79999999999",
 						},
 						ApproverTemplate{
 							Fio:         "Иванов Иван Иванович",
-							Email:       "ivanov@mts.ru",
+							Email:       "",
 							PhoneNumber: "+79999999999",
 						},
 					},
